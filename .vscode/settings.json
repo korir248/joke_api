@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "undefined/subscriptions/a5155222-e8bf-4fc7-9ca6-392c1909cd1c/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/njuki",
+    "appService.deploySubpath": "."
+}
