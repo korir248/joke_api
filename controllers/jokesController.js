@@ -1,6 +1,7 @@
-const { promisify } = require("util");
 const mysql = require("mysql");
 const config = require("../config/db.config");
+const { addJokeMD, deleteJokeMD } = require("../mongo/mongoJokesController");
+const Jokes = require("../mongo/model/JokeSchema");
 const database = mysql.createPool(config);
 
 const getRandomJoke = async (req, res) => {
@@ -12,9 +13,10 @@ const getRandomJoke = async (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
-          message: "Could not create joke",
+          message: "Could not get joke",
           error: err.message,
         });
       return res.status(200).send(JSON.stringify(result[0]));
@@ -24,6 +26,13 @@ const getRandomJoke = async (req, res) => {
 
 const createJoke = (req, res) => {
   let { joke_type, setup, punchline } = req.body;
+  let new_joke = new Jokes({
+    joke_type,
+    setup,
+    punchline,
+  });
+  console.log(new_joke);
+  addJokeMD(new_joke);
   let sql = `insert into jokes(type,setup,punchline) values("${joke_type}","${setup}","${punchline}");`;
   database.getConnection((error, connection) => {
     if (error)
@@ -31,6 +40,7 @@ const createJoke = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "Could not create joke",
@@ -38,6 +48,7 @@ const createJoke = (req, res) => {
         });
       return res.status(201).json({
         message: "Joke created succesfully!",
+        data: result,
       });
     });
   });
@@ -52,6 +63,7 @@ const deleteJoke = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "Could not delete joke",
@@ -72,11 +84,13 @@ const updateJoke = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "Could not update joke",
           error: err.message,
         });
+      deleteJokeMD(id);
       return res.status(200).json({
         message: "Joke updated successfully",
       });
@@ -92,6 +106,7 @@ const getAllJokes = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "Error getting jokes",
@@ -114,6 +129,7 @@ const getTypes = async (req, res) => {
         error: err.message,
       });
     connection.query(sql, (error, result) => {
+      connection.release();
       if (error)
         return res.status(500).json({
           message: "Could not get joke types",

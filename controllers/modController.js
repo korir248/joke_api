@@ -3,7 +3,7 @@ const config = require("../config/db.config");
 const generateToken = require("../helpers/token");
 const encryptPassword = require("../helpers/hashPassword");
 const compareHash = require("../helpers/compareHash");
-let db = mysql.createConnection(config);
+const database = mysql.createPool(config);
 
 const loginMod = (req, res) => {
   let { email, password } = req.body;
@@ -14,6 +14,7 @@ const loginMod = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "An error occured during login",
@@ -48,6 +49,7 @@ const signupMod = (req, res) => {
         error: err.message,
       });
     connection.query(sql, (err, result) => {
+      connection.release();
       if (err)
         return res.status(500).json({
           message: "An error occured during signup",
@@ -59,8 +61,54 @@ const signupMod = (req, res) => {
     });
   });
 };
+const approveMod = (req, res) => {
+  console.log("Request: ",req.body);
+  let { user_id } = req.body;
+  let sql = `update users set is_approved = true where user_id = ${user_id};`;
+  database.getConnection((err, connection) => {
+    if (err)
+      return res.status(500).json({
+        error: err.message,
+      });
+    connection.query(sql, (error, result) => {
+      connection.release();
+      if (error)
+        return res.status(500).json({
+          message: "Could not approve moderator",
+          error: error.message,
+        });
+      return res.status(200).json({
+        message: "Moderator updated successfully",
+      });
+    });
+  });
+};
+
+const getAllMods = (req, res) => {
+  let sql = "select * from users where user_id > 1 order by user_id desc;";
+  database.getConnection((error, connection) => {
+    if (error)
+      return res.status(500).json({
+        error: err.message,
+      });
+    connection.query(sql, (err, result) => {
+      connection.release();
+      if (err)
+        return res.status(500).json({
+          message: "Error getting moderators",
+          error: err.message,
+        });
+      return res.status(200).json({
+        message: "Mods fetched successfully",
+        data: result,
+      });
+    });
+  });
+};
 
 module.exports = {
   loginMod,
   signupMod,
+  approveMod,
+  getAllMods,
 };
